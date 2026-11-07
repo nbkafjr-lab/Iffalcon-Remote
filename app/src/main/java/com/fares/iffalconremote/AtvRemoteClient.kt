@@ -128,7 +128,7 @@ class AtvRemoteClient(
     }
 
     fun pressPower() {
-        sendKey(KEYCODE_POWER)
+        pressKey(KEYCODE_POWER)
     }
 
     fun pressKey(keyCode: Int) {
