@@ -164,14 +164,18 @@ class MainActivity : ComponentActivity() {
                 if (!alreadyPaired) scanForTv()
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF081321))
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = Color(0xFF081321),
+                contentColor = Color(0xFFEAF2FF)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                 Text("iFFALCON Remote", fontSize = 27.sp)
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -606,6 +610,7 @@ class MainActivity : ComponentActivity() {
 
                 Spacer(modifier = Modifier.height(20.dp))
                 Text(status, fontSize = 13.sp)
+                }
             }
         }
     }
