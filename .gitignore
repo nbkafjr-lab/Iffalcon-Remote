@@ -1,0 +1,16 @@
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+
+# Local source backups
+*.before-*
+before-*/
