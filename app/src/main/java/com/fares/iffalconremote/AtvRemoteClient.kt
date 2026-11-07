@@ -34,6 +34,7 @@ class AtvRemoteClient(
             .socketFactory.createSocket() as SSLSocket
 
         try {
+            AtvNetwork.bindSocketToActiveWifi(context, sslSocket)
             sslSocket.connect(InetSocketAddress(host, PORT), 10000)
             sslSocket.soTimeout = 15000
             sslSocket.startHandshake()
