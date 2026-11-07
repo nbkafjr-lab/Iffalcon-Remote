@@ -140,6 +140,7 @@ object AtvPairing {
             .createSocket() as SSLSocket
 
         try {
+            AtvNetwork.bindSocketToActiveWifi(context, socket)
             socket.connect(InetSocketAddress(host, port), 10000)
             socket.soTimeout = 15000
             socket.startHandshake()
