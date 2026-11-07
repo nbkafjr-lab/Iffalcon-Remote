@@ -56,6 +56,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        window.statusBarColor = android.graphics.Color.rgb(7, 13, 25)
+        window.navigationBarColor = android.graphics.Color.rgb(7, 13, 25)
+
         val alreadyPaired = File(filesDir, "atv-tv-cert.der").exists()
 
         setContent {
@@ -182,16 +185,15 @@ class MainActivity : ComponentActivity() {
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                Text("iFFALCON Remote", fontSize = 27.sp)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    if (wifiConnected) "Wi-Fi: CONNECTED" else "Wi-Fi: NOT CONNECTED",
-                    fontSize = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
+                if (!paired) {
+                    Text("iFFALCON Remote", fontSize = 27.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        if (wifiConnected) "Wi-Fi: CONNECTED" else "Wi-Fi: NOT CONNECTED",
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(18.dp))
+                }
 
                 if (!paired) {
                     if (!pairingStarted) {
@@ -632,9 +634,9 @@ class MainActivity : ComponentActivity() {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 @Composable
-                                fun BottomAction(icon: String, label: String, action: () -> Unit) {
+                                fun BottomAction(itemModifier: Modifier, icon: String, label: String, action: () -> Unit) {
                                     Column(
-                                        modifier = Modifier.weight(1f),
+                                        modifier = itemModifier,
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Button(
@@ -652,19 +654,19 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                BottomAction("⚙", "Settings") {
+                                BottomAction(Modifier.weight(1f), "⚙", "Settings") {
                                     startActivity(Intent(Settings.ACTION_SETTINGS))
                                 }
-                                BottomAction("◉", "Wi-Fi") {
+                                BottomAction(Modifier.weight(1f), "◉", "Wi-Fi") {
                                     startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
                                 }
-                                BottomAction("ᛒ", "Bluetooth") {
+                                BottomAction(Modifier.weight(1f), "ᛒ", "Bluetooth") {
                                     startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                                 }
-                                BottomAction("▧", "Wallpaper") {
+                                BottomAction(Modifier.weight(1f), "▧", "Wallpaper") {
                                     startActivity(Intent(Intent.ACTION_SET_WALLPAPER))
                                 }
-                                BottomAction("⠿", "More") {
+                                BottomAction(Modifier.weight(1f), "⠿", "More") {
                                     startActivity(
                                         Intent(
                                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
