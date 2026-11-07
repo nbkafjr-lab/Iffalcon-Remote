@@ -17,10 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : ComponentActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
+    private val operationInProgress = AtomicBoolean(false)
 
     private var pairingSession: AtvPairingSession? = null
     private var remoteClient: AtvRemoteClient? = null
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity() {
             var paired by remember { mutableStateOf(alreadyPaired) }
             var pairingStarted by remember { mutableStateOf(false) }
             var pin by remember { mutableStateOf("") }
+            var busy by remember { mutableStateOf(false) }
             var status by remember {
                 mutableStateOf(
                     if (alreadyPaired) "Ready" else "Pair your TV first"
@@ -55,12 +58,16 @@ class MainActivity : ComponentActivity() {
                     if (!pairingStarted) {
                         Button(
                             onClick = {
+                                if (!operationInProgress.compareAndSet(false, true)) {
+                                    return@Button
+                                }
+
+                                busy = true
                                 status = "Connecting to TV..."
 
                                 executor.execute {
                                     try {
                                         val session = AtvPairing.begin(this@MainActivity)
-
                                         pairingSession = session
 
                                         runOnUiThread {
@@ -71,9 +78,13 @@ class MainActivity : ComponentActivity() {
                                         runOnUiThread {
                                             status = "Pairing error: ${e.message}"
                                         }
+                                    } finally {
+                                        operationInProgress.set(false)
+                                        runOnUiThread { busy = false }
                                     }
                                 }
                             },
+                            enabled = !busy,
                             modifier = Modifier
                                 .width(230.dp)
                                 .height(65.dp)
@@ -99,6 +110,7 @@ class MainActivity : ComponentActivity() {
                                 capitalization = KeyboardCapitalization.Characters,
                                 keyboardType = KeyboardType.Ascii
                             ),
+                            enabled = !busy,
                             modifier = Modifier.width(230.dp)
                         )
 
@@ -107,32 +119,48 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 val session = pairingSession
-
                                 if (session == null) {
-                                    status = "Pairing session expired. Try again."
-                                } else {
-                                    status = "Verifying PIN..."
+                                    pairingStarted = false
+                                    pin = ""
+                                    status = "Pairing session expired. Tap PAIR TV to try again."
+                                    return@Button
+                                }
 
-                                    executor.execute {
-                                        try {
-                                            session.finish(pin)
-                                            pairingSession = null
+                                if (!operationInProgress.compareAndSet(false, true)) {
+                                    return@Button
+                                }
 
-                                            runOnUiThread {
-                                                paired = true
-                                                pairingStarted = false
-                                                pin = ""
-                                                status = "Pairing successful. Ready."
-                                            }
-                                        } catch (e: Exception) {
-                                            runOnUiThread {
-                                                status = "Pairing failed: ${e.message}"
-                                            }
+                                val enteredPin = pin
+                                busy = true
+                                status = "Verifying PIN..."
+
+                                executor.execute {
+                                    try {
+                                        session.finish(enteredPin)
+                                        pairingSession = null
+
+                                        runOnUiThread {
+                                            paired = true
+                                            pairingStarted = false
+                                            pin = ""
+                                            status = "Pairing successful. Ready."
                                         }
+                                    } catch (e: Exception) {
+                                        session.close()
+                                        pairingSession = null
+
+                                        runOnUiThread {
+                                            pairingStarted = false
+                                            pin = ""
+                                            status = "Pairing failed: ${e.message}. Tap PAIR TV to retry."
+                                        }
+                                    } finally {
+                                        operationInProgress.set(false)
+                                        runOnUiThread { busy = false }
                                     }
                                 }
                             },
-                            enabled = pin.length == 6,
+                            enabled = pin.length == 6 && !busy,
                             modifier = Modifier
                                 .width(230.dp)
                                 .height(60.dp)
@@ -143,6 +171,11 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Button(
                         onClick = {
+                            if (!operationInProgress.compareAndSet(false, true)) {
+                                return@Button
+                            }
+
+                            busy = true
                             status = "Connecting / sending POWER..."
 
                             executor.execute {
@@ -161,8 +194,8 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
 
-                                        client.connect()
                                         remoteClient = client
+                                        client.connect()
                                     }
 
                                     client.pressPower()
@@ -177,9 +210,13 @@ class MainActivity : ComponentActivity() {
                                     runOnUiThread {
                                         status = "Error: ${e.message}"
                                     }
+                                } finally {
+                                    operationInProgress.set(false)
+                                    runOnUiThread { busy = false }
                                 }
                             }
                         },
+                        enabled = !busy,
                         modifier = Modifier
                             .width(250.dp)
                             .height(110.dp)
