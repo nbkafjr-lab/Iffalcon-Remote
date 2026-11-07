@@ -185,7 +185,7 @@ class MainActivity : ComponentActivity() {
                                     if (client?.connected != true) {
                                         client?.close()
 
-                                        client = AtvRemoteClient(
+                                        val newClient = AtvRemoteClient(
                                             context = this@MainActivity,
                                             onDisconnected = { message ->
                                                 runOnUiThread {
@@ -194,11 +194,12 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
 
-                                        remoteClient = client
-                                        client.connect()
+                                        remoteClient = newClient
+                                        newClient.connect()
+                                        client = newClient
                                     }
 
-                                    client.pressPower()
+                                    checkNotNull(client).pressPower()
 
                                     runOnUiThread {
                                         status = "POWER command sent"
