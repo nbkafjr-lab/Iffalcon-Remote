@@ -2,6 +2,10 @@ package com.fares.iffalconremote
 
 import android.content.Context
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.BasicConstraints
+import org.bouncycastle.asn1.x509.Extension
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -50,6 +54,14 @@ object AtvIdentity {
             Date(now + 10L * 365 * 24 * 60 * 60 * 1000),
             subject,
             keyPair.public
+        ).addExtension(
+            Extension.basicConstraints,
+            false,
+            BasicConstraints(0)
+        ).addExtension(
+            Extension.subjectAlternativeName,
+            false,
+            GeneralNames(GeneralName(GeneralName.dNSName, "atvremote"))
         )
 
         val signer = JcaContentSignerBuilder("SHA256withRSA")
