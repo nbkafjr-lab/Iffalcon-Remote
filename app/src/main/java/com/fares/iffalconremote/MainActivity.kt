@@ -26,6 +26,7 @@ class MainActivity : ComponentActivity() {
 
     private var pairingSession: AtvPairingSession? = null
     private var remoteClient: AtvRemoteClient? = null
+    private var pairingServiceName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,11 +64,16 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 busy = true
-                                status = "Connecting to TV..."
+                                status = "Searching for TV..."
 
                                 executor.execute {
                                     try {
-                                        val session = AtvPairing.begin(this@MainActivity)
+                                        val endpoint = AtvDiscovery.findTv(this@MainActivity)
+                                        pairingServiceName = endpoint.serviceName
+                                        val session = AtvPairing.begin(
+                                            this@MainActivity,
+                                            endpoint.host
+                                        )
                                         pairingSession = session
 
                                         runOnUiThread {
@@ -138,6 +144,12 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         session.finish(enteredPin)
                                         pairingSession = null
+                                        pairingServiceName?.let { serviceName ->
+                                            getSharedPreferences("tv_connection", MODE_PRIVATE)
+                                                .edit()
+                                                .putString("service_name", serviceName)
+                                                .apply()
+                                        }
 
                                         runOnUiThread {
                                             paired = true
@@ -148,6 +160,7 @@ class MainActivity : ComponentActivity() {
                                     } catch (e: Exception) {
                                         session.close()
                                         pairingSession = null
+                                        pairingServiceName = null
 
                                         runOnUiThread {
                                             pairingStarted = false
@@ -185,8 +198,19 @@ class MainActivity : ComponentActivity() {
                                     if (client?.connected != true) {
                                         client?.close()
 
+                                        val preferredName = getSharedPreferences(
+                                            "tv_connection",
+                                            MODE_PRIVATE
+                                        ).getString("service_name", null)
+                                        status = "Searching for paired TV..."
+                                        val endpoint = AtvDiscovery.findTv(
+                                            this@MainActivity,
+                                            preferredName
+                                        )
+
                                         val newClient = AtvRemoteClient(
                                             context = this@MainActivity,
+                                            host = endpoint.host,
                                             onDisconnected = { message ->
                                                 runOnUiThread {
                                                     status = "Disconnected: $message"
@@ -196,6 +220,10 @@ class MainActivity : ComponentActivity() {
 
                                         remoteClient = newClient
                                         newClient.connect()
+                                        getSharedPreferences("tv_connection", MODE_PRIVATE)
+                                            .edit()
+                                            .putString("service_name", endpoint.serviceName)
+                                            .apply()
                                         client = newClient
                                     }
 
