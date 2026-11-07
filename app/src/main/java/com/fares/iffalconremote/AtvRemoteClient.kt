@@ -6,7 +6,7 @@ import javax.net.ssl.SSLSocket
 
 class AtvRemoteClient(
     private val context: Context,
-    private val host: String = "192.168.1.2",
+    private val host: String,
     private val onDisconnected: (String) -> Unit = {}
 ) : AutoCloseable {
 

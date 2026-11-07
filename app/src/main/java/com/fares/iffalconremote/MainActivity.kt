@@ -1,5 +1,7 @@
 package com.fares.iffalconremote
 
+import android.content.Context
+import android.net.ConnectivityManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +28,15 @@ class MainActivity : ComponentActivity() {
 
     private var pairingSession: AtvPairingSession? = null
     private var remoteClient: AtvRemoteClient? = null
+    private var pairingServiceName: String? = null
+
+    @Suppress("DEPRECATION")
+    private fun hasWifiConnection(): Boolean {
+        val connectivity = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val activeNetwork = connectivity.activeNetworkInfo
+        return activeNetwork?.isConnected == true &&
+            activeNetwork.type == ConnectivityManager.TYPE_WIFI
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +48,47 @@ class MainActivity : ComponentActivity() {
             var pairingStarted by remember { mutableStateOf(false) }
             var pin by remember { mutableStateOf("") }
             var busy by remember { mutableStateOf(false) }
+            var wifiConnected by remember { mutableStateOf(hasWifiConnection()) }
+            var discoveredTv by remember { mutableStateOf<TvEndpoint?>(null) }
             var status by remember {
-                mutableStateOf(
-                    if (alreadyPaired) "Ready" else "Pair your TV first"
-                )
+                mutableStateOf(if (alreadyPaired) "Ready" else "Checking Wi-Fi...")
+            }
+
+            fun scanForTv() {
+                if (!operationInProgress.compareAndSet(false, true)) return
+
+                busy = true
+                wifiConnected = hasWifiConnection()
+                discoveredTv = null
+
+                if (!wifiConnected) {
+                    status = "Connect your phone to the same Wi-Fi network as the TV."
+                    busy = false
+                    operationInProgress.set(false)
+                    return
+                }
+
+                status = "Searching for Android TV on this Wi-Fi..."
+                executor.execute {
+                    try {
+                        val endpoint = AtvDiscovery.findTv(this@MainActivity)
+                        runOnUiThread {
+                            discoveredTv = endpoint
+                            status = "TV found. You can pair now."
+                        }
+                    } catch (e: Exception) {
+                        runOnUiThread {
+                            status = e.message ?: "TV search failed. Try again."
+                        }
+                    } finally {
+                        operationInProgress.set(false)
+                        runOnUiThread { busy = false }
+                    }
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                if (!alreadyPaired) scanForTv()
             }
 
             Column(
@@ -52,44 +100,91 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text("iFFALCON Remote", fontSize = 28.sp)
 
-                Spacer(modifier = Modifier.height(45.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    if (wifiConnected) "Wi-Fi: CONNECTED" else "Wi-Fi: NOT CONNECTED",
+                    fontSize = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 if (!paired) {
                     if (!pairingStarted) {
-                        Button(
-                            onClick = {
-                                if (!operationInProgress.compareAndSet(false, true)) {
-                                    return@Button
-                                }
+                        val tv = discoveredTv
+                        if (tv == null) {
+                            Text(
+                                if (busy) "Searching for available TVs..."
+                                else "No TV discovered yet.",
+                                fontSize = 16.sp
+                            )
 
-                                busy = true
-                                status = "Connecting to TV..."
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                                executor.execute {
-                                    try {
-                                        val session = AtvPairing.begin(this@MainActivity)
-                                        pairingSession = session
+                            Button(
+                                onClick = { scanForTv() },
+                                enabled = !busy,
+                                modifier = Modifier
+                                    .width(230.dp)
+                                    .height(60.dp)
+                            ) {
+                                Text("SEARCH FOR TV", fontSize = 19.sp)
+                            }
+                        } else {
+                            Text("AVAILABLE TV", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(tv.serviceName, fontSize = 20.sp)
+                            Text("IP address: ${tv.host}", fontSize = 15.sp)
 
-                                        runOnUiThread {
-                                            pairingStarted = true
-                                            status = "Enter the PIN displayed on your TV"
-                                        }
-                                    } catch (e: Exception) {
-                                        runOnUiThread {
-                                            status = "Pairing error: ${e.message}"
-                                        }
-                                    } finally {
-                                        operationInProgress.set(false)
-                                        runOnUiThread { busy = false }
+                            Spacer(modifier = Modifier.height(18.dp))
+
+                            Button(
+                                onClick = {
+                                    if (!operationInProgress.compareAndSet(false, true)) {
+                                        return@Button
                                     }
-                                }
-                            },
-                            enabled = !busy,
-                            modifier = Modifier
-                                .width(230.dp)
-                                .height(65.dp)
-                        ) {
-                            Text("PAIR TV", fontSize = 22.sp)
+
+                                    busy = true
+                                    status = "Connecting to TV pairing service..."
+                                    executor.execute {
+                                        try {
+                                            val session = AtvPairing.begin(
+                                                this@MainActivity,
+                                                tv.host
+                                            )
+                                            pairingSession = session
+                                            pairingServiceName = tv.serviceName
+
+                                            runOnUiThread {
+                                                pairingStarted = true
+                                                status = "Enter the PIN displayed on your TV"
+                                            }
+                                        } catch (e: Exception) {
+                                            runOnUiThread {
+                                                status = "Pairing error: ${e.message}"
+                                            }
+                                        } finally {
+                                            operationInProgress.set(false)
+                                            runOnUiThread { busy = false }
+                                        }
+                                    }
+                                },
+                                enabled = !busy,
+                                modifier = Modifier
+                                    .width(230.dp)
+                                    .height(65.dp)
+                            ) {
+                                Text("PAIR TV", fontSize = 22.sp)
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Button(
+                                onClick = { scanForTv() },
+                                enabled = !busy
+                            ) {
+                                Text("SEARCH AGAIN")
+                            }
                         }
                     } else {
                         Text(
@@ -122,7 +217,7 @@ class MainActivity : ComponentActivity() {
                                 if (session == null) {
                                     pairingStarted = false
                                     pin = ""
-                                    status = "Pairing session expired. Tap PAIR TV to try again."
+                                    status = "Pairing session expired. Search for your TV and try again."
                                     return@Button
                                 }
 
@@ -138,6 +233,12 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         session.finish(enteredPin)
                                         pairingSession = null
+                                        pairingServiceName?.let { serviceName ->
+                                            getSharedPreferences("tv_connection", MODE_PRIVATE)
+                                                .edit()
+                                                .putString("service_name", serviceName)
+                                                .apply()
+                                        }
 
                                         runOnUiThread {
                                             paired = true
@@ -148,11 +249,12 @@ class MainActivity : ComponentActivity() {
                                     } catch (e: Exception) {
                                         session.close()
                                         pairingSession = null
+                                        pairingServiceName = null
 
                                         runOnUiThread {
                                             pairingStarted = false
                                             pin = ""
-                                            status = "Pairing failed: ${e.message}. Tap PAIR TV to retry."
+                                            status = "Pairing failed: ${e.message}. Search for your TV and retry."
                                         }
                                     } finally {
                                         operationInProgress.set(false)
@@ -185,8 +287,18 @@ class MainActivity : ComponentActivity() {
                                     if (client?.connected != true) {
                                         client?.close()
 
+                                        val preferredName = getSharedPreferences(
+                                            "tv_connection",
+                                            MODE_PRIVATE
+                                        ).getString("service_name", null)
+                                        val endpoint = AtvDiscovery.findTv(
+                                            this@MainActivity,
+                                            preferredName
+                                        )
+
                                         val newClient = AtvRemoteClient(
                                             context = this@MainActivity,
+                                            host = endpoint.host,
                                             onDisconnected = { message ->
                                                 runOnUiThread {
                                                     status = "Disconnected: $message"
@@ -196,6 +308,10 @@ class MainActivity : ComponentActivity() {
 
                                         remoteClient = newClient
                                         newClient.connect()
+                                        getSharedPreferences("tv_connection", MODE_PRIVATE)
+                                            .edit()
+                                            .putString("service_name", endpoint.serviceName)
+                                            .apply()
                                         client = newClient
                                     }
 
@@ -226,9 +342,8 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
-
-                Text(status, fontSize = 15.sp)
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(status, fontSize = 14.sp)
             }
         }
     }
