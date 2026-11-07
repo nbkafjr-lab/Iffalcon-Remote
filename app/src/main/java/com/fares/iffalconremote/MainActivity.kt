@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.OutlinedTextField
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
             var busy by remember { mutableStateOf(false) }
             var wifiConnected by remember { mutableStateOf(hasWifiConnection()) }
             var discoveredTv by remember { mutableStateOf<TvEndpoint?>(null) }
+            var textToSend by remember { mutableStateOf("") }
             var status by remember {
                 mutableStateOf(if (alreadyPaired) "Ready" else "Checking Wi-Fi...")
             }
@@ -87,6 +90,69 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            fun runRemoteAction(label: String, action: (AtvRemoteClient) -> Unit) {
+                if (!operationInProgress.compareAndSet(false, true)) return
+
+                busy = true
+                status = "$label..."
+
+                executor.execute {
+                    try {
+                        var client = remoteClient
+
+                        if (client?.connected != true) {
+                            client?.close()
+
+                            val preferredName = getSharedPreferences(
+                                "tv_connection",
+                                MODE_PRIVATE
+                            ).getString("service_name", null)
+
+                            val endpoint = AtvDiscovery.findTv(
+                                this@MainActivity,
+                                preferredName
+                            )
+
+                            val newClient = AtvRemoteClient(
+                                context = this@MainActivity,
+                                host = endpoint.host,
+                                onDisconnected = { message ->
+                                    runOnUiThread {
+                                        status = "Disconnected: $message"
+                                    }
+                                }
+                            )
+
+                            remoteClient = newClient
+                            newClient.connect()
+
+                            getSharedPreferences("tv_connection", MODE_PRIVATE)
+                                .edit()
+                                .putString("service_name", endpoint.serviceName)
+                                .apply()
+
+                            client = newClient
+                        }
+
+                        action(checkNotNull(client))
+
+                        runOnUiThread {
+                            status = "$label command sent"
+                        }
+                    } catch (e: Exception) {
+                        remoteClient?.close()
+                        remoteClient = null
+
+                        runOnUiThread {
+                            status = "Error: ${e.message}"
+                        }
+                    } finally {
+                        operationInProgress.set(false)
+                        runOnUiThread { busy = false }
+                    }
+                }
+            }
+
             LaunchedEffect(Unit) {
                 if (!alreadyPaired) scanForTv()
             }
@@ -94,20 +160,20 @@ class MainActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("iFFALCON Remote", fontSize = 28.sp)
+                Text("iFFALCON Remote", fontSize = 27.sp)
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     if (wifiConnected) "Wi-Fi: CONNECTED" else "Wi-Fi: NOT CONNECTED",
-                    fontSize = 18.sp
+                    fontSize = 16.sp
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 if (!paired) {
                     if (!pairingStarted) {
@@ -273,77 +339,149 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Button(
                         onClick = {
-                            if (!operationInProgress.compareAndSet(false, true)) {
-                                return@Button
-                            }
-
-                            busy = true
-                            status = "Connecting / sending POWER..."
-
-                            executor.execute {
-                                try {
-                                    var client = remoteClient
-
-                                    if (client?.connected != true) {
-                                        client?.close()
-
-                                        val preferredName = getSharedPreferences(
-                                            "tv_connection",
-                                            MODE_PRIVATE
-                                        ).getString("service_name", null)
-                                        val endpoint = AtvDiscovery.findTv(
-                                            this@MainActivity,
-                                            preferredName
-                                        )
-
-                                        val newClient = AtvRemoteClient(
-                                            context = this@MainActivity,
-                                            host = endpoint.host,
-                                            onDisconnected = { message ->
-                                                runOnUiThread {
-                                                    status = "Disconnected: $message"
-                                                }
-                                            }
-                                        )
-
-                                        remoteClient = newClient
-                                        newClient.connect()
-                                        getSharedPreferences("tv_connection", MODE_PRIVATE)
-                                            .edit()
-                                            .putString("service_name", endpoint.serviceName)
-                                            .apply()
-                                        client = newClient
-                                    }
-
-                                    checkNotNull(client).pressPower()
-
-                                    runOnUiThread {
-                                        status = "POWER command sent"
-                                    }
-                                } catch (e: Exception) {
-                                    remoteClient?.close()
-                                    remoteClient = null
-
-                                    runOnUiThread {
-                                        status = "Error: ${e.message}"
-                                    }
-                                } finally {
-                                    operationInProgress.set(false)
-                                    runOnUiThread { busy = false }
-                                }
-                            }
+                            runRemoteAction("POWER") { it.pressPower() }
                         },
                         enabled = !busy,
                         modifier = Modifier
-                            .width(250.dp)
-                            .height(110.dp)
+                            .width(230.dp)
+                            .height(58.dp)
                     ) {
-                        Text("POWER", fontSize = 30.sp)
+                        Text("POWER", fontSize = 22.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = { runRemoteAction("BACK") { it.pressKey(4) } },
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text("BACK")
+                        }
+
+                        Button(
+                            onClick = { runRemoteAction("HOME") { it.pressKey(3) } },
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text("HOME")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Text("NAVIGATION", fontSize = 15.sp)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { runRemoteAction("UP") { it.pressKey(19) } },
+                        enabled = !busy,
+                        modifier = Modifier.size(width = 88.dp, height = 58.dp)
+                    ) {
+                        Text("▲", fontSize = 23.sp)
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { runRemoteAction("LEFT") { it.pressKey(21) } },
+                            enabled = !busy,
+                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
+                        ) {
+                            Text("◀", fontSize = 23.sp)
+                        }
+
+                        Button(
+                            onClick = { runRemoteAction("OK") { it.pressKey(23) } },
+                            enabled = !busy,
+                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
+                        ) {
+                            Text("OK", fontSize = 19.sp)
+                        }
+
+                        Button(
+                            onClick = { runRemoteAction("RIGHT") { it.pressKey(22) } },
+                            enabled = !busy,
+                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
+                        ) {
+                            Text("▶", fontSize = 23.sp)
+                        }
+                    }
+
+                    Button(
+                        onClick = { runRemoteAction("DOWN") { it.pressKey(20) } },
+                        enabled = !busy,
+                        modifier = Modifier.size(width = 88.dp, height = 58.dp)
+                    ) {
+                        Text("▼", fontSize = 23.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(22.dp))
+                    Text("KEYBOARD", fontSize = 15.sp)
+                    Text(
+                        "Select a text field on the TV, then type here.",
+                        fontSize = 13.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = textToSend,
+                        onValueChange = { textToSend = it },
+                        label = { Text("Type text for your TV") },
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            keyboardType = KeyboardType.Text
+                        ),
+                        minLines = 2,
+                        maxLines = 4,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val text = textToSend
+                                runRemoteAction("SEND TEXT") { it.sendText(text) }
+                            },
+                            enabled = !busy && textToSend.isNotEmpty(),
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text("SEND")
+                        }
+
+                        Button(
+                            onClick = { runRemoteAction("BACKSPACE") { it.pressKey(67) } },
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text("⌫")
+                        }
+
+                        Button(
+                            onClick = { runRemoteAction("ENTER") { it.pressKey(66) } },
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f).height(52.dp)
+                        ) {
+                            Text("ENTER")
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(status, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(status, fontSize = 13.sp)
             }
         }
     }
