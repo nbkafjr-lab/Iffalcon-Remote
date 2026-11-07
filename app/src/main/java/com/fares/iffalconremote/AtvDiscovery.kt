@@ -42,7 +42,7 @@ object AtvDiscovery {
             }
 
             override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                if (serviceInfo.serviceType != SERVICE_TYPE) return
+                if (serviceInfo.serviceType.trimEnd('.') != SERVICE_TYPE.trimEnd('.')) return
                 if (preferredServiceName != null &&
                     serviceInfo.serviceName != preferredServiceName
                 ) return
