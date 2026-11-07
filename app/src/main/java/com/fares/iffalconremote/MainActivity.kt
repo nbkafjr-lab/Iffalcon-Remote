@@ -202,7 +202,6 @@ class MainActivity : ComponentActivity() {
                                             "tv_connection",
                                             MODE_PRIVATE
                                         ).getString("service_name", null)
-                                        status = "Searching for paired TV..."
                                         val endpoint = AtvDiscovery.findTv(
                                             this@MainActivity,
                                             preferredName
