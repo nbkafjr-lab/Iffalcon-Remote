@@ -1,6 +1,7 @@
 package com.fares.iffalconremote
 
 import android.content.Context
+import android.util.Log
 import java.math.BigInteger
 import java.net.InetSocketAddress
 import java.security.MessageDigest
@@ -207,6 +208,7 @@ object AtvPairing {
             return AtvPairingSession.create(context, socket, certificate)
 
         } catch (error: Exception) {
+            Log.e("AtvPairing", "Pairing failed while connecting to $host:$port or negotiating the pairing session", error)
             try {
                 socket.close()
             } catch (_: Exception) {
