@@ -407,8 +407,8 @@ class MainActivity : ComponentActivity() {
                                         ) {}
                                         Spacer(Modifier.width(7.dp))
                                         Text(
-                                            if (wifiConnected) "Connected" else "Offline",
-                                            color = if (wifiConnected) Color(0xFF79F05C) else Color(0xFFFF9A9A),
+                                            "Paired",
+                                            color = Color(0xFF79F05C),
                                             fontSize = 12.sp
                                         )
                                     }
