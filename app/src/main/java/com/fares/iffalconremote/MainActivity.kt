@@ -6,6 +6,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.Surface
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
@@ -160,6 +167,7 @@ class MainActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(Color(0xFF081321))
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -337,145 +345,261 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 } else {
-                    Button(
-                        onClick = {
-                            runRemoteAction("POWER") { it.pressPower() }
-                        },
-                        enabled = !busy,
-                        modifier = Modifier
-                            .width(230.dp)
-                            .height(58.dp)
-                    ) {
-                        Text("POWER", fontSize = 22.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
+                    // Premium dark remote interface. Remote actions and protocol calls are unchanged.
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        color = Color(0xFF111E30),
+                        shape = RoundedCornerShape(28.dp),
+                        elevation = 8.dp
                     ) {
-                        Button(
-                            onClick = { runRemoteAction("BACK") { it.pressKey(4) } },
-                            enabled = !busy,
-                            modifier = Modifier.weight(1f).height(52.dp)
+                        Column(
+                            modifier = Modifier.padding(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("BACK")
-                        }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        "YOUR TV REMOTE",
+                                        color = Color(0xFF91A7C2),
+                                        fontSize = 11.sp,
+                                        letterSpacing = 1.5.sp
+                                    )
+                                    Text(
+                                        "Living Room",
+                                        color = Color(0xFFF4F8FF),
+                                        fontSize = 21.sp
+                                    )
+                                }
+                                Surface(
+                                    color = Color(0xFF123B3B),
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            modifier = Modifier.size(7.dp),
+                                            color = Color(0xFF45E0B1),
+                                            shape = CircleShape
+                                        ) {}
+                                        Spacer(modifier = Modifier.width(7.dp))
+                                        Text("PAIRED", color = Color(0xFF8AF0D0), fontSize = 10.sp)
+                                    }
+                                }
+                            }
 
-                        Button(
-                            onClick = { runRemoteAction("HOME") { it.pressKey(3) } },
-                            enabled = !busy,
-                            modifier = Modifier.weight(1f).height(52.dp)
-                        ) {
-                            Text("HOME")
-                        }
-                    }
+                            Spacer(modifier = Modifier.height(20.dp))
 
-                    Spacer(modifier = Modifier.height(18.dp))
-                    Text("NAVIGATION", fontSize = 15.sp)
+                            Button(
+                                onClick = { runRemoteAction("POWER") { it.pressPower() } },
+                                enabled = !busy,
+                                shape = CircleShape,
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Color(0xFF26364B),
+                                    contentColor = Color(0xFFFF7185),
+                                    disabledBackgroundColor = Color(0xFF26364B),
+                                    disabledContentColor = Color(0xFF8A96A8)
+                                ),
+                                modifier = Modifier.size(66.dp)
+                            ) {
+                                Text("⏻", fontSize = 29.sp)
+                            }
+                            Spacer(modifier = Modifier.height(7.dp))
+                            Text("POWER", color = Color(0xFF91A7C2), fontSize = 10.sp, letterSpacing = 1.5.sp)
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
-                    Button(
-                        onClick = { runRemoteAction("UP") { it.pressKey(19) } },
-                        enabled = !busy,
-                        modifier = Modifier.size(width = 88.dp, height = 58.dp)
-                    ) {
-                        Text("▲", fontSize = 23.sp)
-                    }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Button(
+                                    onClick = { runRemoteAction("BACK") { it.pressKey(4) } },
+                                    enabled = !busy,
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF24364D),
+                                        contentColor = Color(0xFFEAF2FF)
+                                    ),
+                                    modifier = Modifier.weight(1f).height(50.dp)
+                                ) { Text("‹   BACK", fontSize = 13.sp) }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { runRemoteAction("LEFT") { it.pressKey(21) } },
-                            enabled = !busy,
-                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
-                        ) {
-                            Text("◀", fontSize = 23.sp)
-                        }
+                                Button(
+                                    onClick = { runRemoteAction("HOME") { it.pressKey(3) } },
+                                    enabled = !busy,
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF24364D),
+                                        contentColor = Color(0xFFEAF2FF)
+                                    ),
+                                    modifier = Modifier.weight(1f).height(50.dp)
+                                ) { Text("⌂   HOME", fontSize = 13.sp) }
+                            }
 
-                        Button(
-                            onClick = { runRemoteAction("OK") { it.pressKey(23) } },
-                            enabled = !busy,
-                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
-                        ) {
-                            Text("OK", fontSize = 19.sp)
-                        }
+                            Spacer(modifier = Modifier.height(25.dp))
+                            Text(
+                                "NAVIGATION",
+                                color = Color(0xFF91A7C2),
+                                fontSize = 11.sp,
+                                letterSpacing = 2.sp
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = { runRemoteAction("RIGHT") { it.pressKey(22) } },
-                            enabled = !busy,
-                            modifier = Modifier.size(width = 88.dp, height = 58.dp)
-                        ) {
-                            Text("▶", fontSize = 23.sp)
-                        }
-                    }
+                            Surface(
+                                color = Color(0xFF0B1626),
+                                shape = RoundedCornerShape(30.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Button(
+                                        onClick = { runRemoteAction("UP") { it.pressKey(19) } },
+                                        enabled = !busy,
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            backgroundColor = Color(0xFF24364D),
+                                            contentColor = Color.White
+                                        ),
+                                        modifier = Modifier.size(64.dp)
+                                    ) { Text("▲", fontSize = 21.sp) }
 
-                    Button(
-                        onClick = { runRemoteAction("DOWN") { it.pressKey(20) } },
-                        enabled = !busy,
-                        modifier = Modifier.size(width = 88.dp, height = 58.dp)
-                    ) {
-                        Text("▼", fontSize = 23.sp)
-                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { runRemoteAction("LEFT") { it.pressKey(21) } },
+                                            enabled = !busy,
+                                            shape = CircleShape,
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = Color(0xFF24364D),
+                                                contentColor = Color.White
+                                            ),
+                                            modifier = Modifier.size(64.dp)
+                                        ) { Text("◀", fontSize = 20.sp) }
 
-                    Spacer(modifier = Modifier.height(22.dp))
-                    Text("KEYBOARD", fontSize = 15.sp)
-                    Text(
-                        "Select a text field on the TV, then type here.",
-                        fontSize = 13.sp
-                    )
+                                        Button(
+                                            onClick = { runRemoteAction("OK") { it.pressKey(23) } },
+                                            enabled = !busy,
+                                            shape = CircleShape,
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = Color(0xFF25B9D2),
+                                                contentColor = Color(0xFF061521)
+                                            ),
+                                            modifier = Modifier.size(70.dp)
+                                        ) { Text("OK", fontSize = 17.sp) }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                                        Button(
+                                            onClick = { runRemoteAction("RIGHT") { it.pressKey(22) } },
+                                            enabled = !busy,
+                                            shape = CircleShape,
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = Color(0xFF24364D),
+                                                contentColor = Color.White
+                                            ),
+                                            modifier = Modifier.size(64.dp)
+                                        ) { Text("▶", fontSize = 20.sp) }
+                                    }
 
-                    OutlinedTextField(
-                        value = textToSend,
-                        onValueChange = { textToSend = it },
-                        label = { Text("Type text for your TV") },
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            keyboardType = KeyboardType.Text
-                        ),
-                        minLines = 2,
-                        maxLines = 4,
-                        enabled = !busy,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                                    Button(
+                                        onClick = { runRemoteAction("DOWN") { it.pressKey(20) } },
+                                        enabled = !busy,
+                                        shape = CircleShape,
+                                        colors = ButtonDefaults.buttonColors(
+                                            backgroundColor = Color(0xFF24364D),
+                                            contentColor = Color.White
+                                        ),
+                                        modifier = Modifier.size(64.dp)
+                                    ) { Text("▼", fontSize = 21.sp) }
+                                }
+                            }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(26.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                val text = textToSend
-                                runRemoteAction("SEND TEXT") { it.sendText(text) }
-                            },
-                            enabled = !busy && textToSend.isNotEmpty(),
-                            modifier = Modifier.weight(1f).height(52.dp)
-                        ) {
-                            Text("SEND")
-                        }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "KEYBOARD",
+                                    color = Color(0xFF91A7C2),
+                                    fontSize = 11.sp,
+                                    letterSpacing = 2.sp
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                Text("PHONE TO TV", color = Color(0xFF5E7898), fontSize = 9.sp)
+                            }
 
-                        Button(
-                            onClick = { runRemoteAction("BACKSPACE") { it.pressKey(67) } },
-                            enabled = !busy,
-                            modifier = Modifier.weight(1f).height(52.dp)
-                        ) {
-                            Text("⌫")
-                        }
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                        Button(
-                            onClick = { runRemoteAction("ENTER") { it.pressKey(66) } },
-                            enabled = !busy,
-                            modifier = Modifier.weight(1f).height(52.dp)
-                        ) {
-                            Text("ENTER")
+                            OutlinedTextField(
+                                value = textToSend,
+                                onValueChange = { textToSend = it },
+                                label = { Text("Type something…", color = Color(0xFF91A7C2)) },
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Sentences,
+                                    keyboardType = KeyboardType.Text
+                                ),
+                                minLines = 2,
+                                maxLines = 4,
+                                enabled = !busy,
+                                colors = TextFieldDefaults.outlinedTextFieldColors(
+                                    textColor = Color(0xFFF4F8FF),
+                                    focusedBorderColor = Color(0xFF25B9D2),
+                                    unfocusedBorderColor = Color(0xFF40536B),
+                                    cursorColor = Color(0xFF25B9D2)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        val text = textToSend
+                                        runRemoteAction("SEND TEXT") { it.sendText(text) }
+                                    },
+                                    enabled = !busy && textToSend.isNotEmpty(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF25B9D2),
+                                        contentColor = Color(0xFF061521)
+                                    ),
+                                    modifier = Modifier.weight(1.3f).height(48.dp)
+                                ) { Text("SEND", fontSize = 12.sp) }
+
+                                Button(
+                                    onClick = { runRemoteAction("BACKSPACE") { it.pressKey(67) } },
+                                    enabled = !busy,
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF24364D),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier.weight(0.8f).height(48.dp)
+                                ) { Text("⌫", fontSize = 19.sp) }
+
+                                Button(
+                                    onClick = { runRemoteAction("ENTER") { it.pressKey(66) } },
+                                    enabled = !busy,
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF24364D),
+                                        contentColor = Color.White
+                                    ),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) { Text("ENTER", fontSize = 11.sp) }
+                            }
                         }
                     }
                 }
