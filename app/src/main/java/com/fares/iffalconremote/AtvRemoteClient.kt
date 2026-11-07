@@ -14,12 +14,20 @@ class AtvRemoteClient(
         private const val PORT = 6466
         private const val FEATURE_PING = 1
         private const val FEATURE_KEY = 2
+        private const val FEATURE_IME = 4
         private const val FEATURE_POWER = 32
         private const val KEYCODE_POWER = 26
+        private const val DIRECTION_SHORT = 3
     }
 
     private var socket: SSLSocket? = null
     private var features = 0
+
+    @Volatile
+    private var imeCounter = 0
+
+    @Volatile
+    private var imeFieldCounter = 0
 
     @Volatile
     var connected = false
@@ -52,14 +60,14 @@ class AtvRemoteClient(
                 ?: error("TV did not advertise remote features")
 
             features = offeredFeatures and (
-                FEATURE_PING or FEATURE_KEY or FEATURE_POWER
+                FEATURE_PING or FEATURE_KEY or FEATURE_IME or FEATURE_POWER
             )
 
             check(features and FEATURE_KEY != 0) {
                 "TV does not support key commands"
             }
 
-            // Reply with our selected features and client identity.
+            // Reply with the supported features and client identity.
             val deviceInfo =
                 ProtoCodec.encodeVarintField(3, 1) +
                 ProtoCodec.encodeStringField(4, "1") +
@@ -77,6 +85,7 @@ class AtvRemoteClient(
 
             while (!activeReceived) {
                 val message = readMessage()
+                updateImeState(message)
 
                 if (message.any { it.number == 2 }) {
                     sendMessage(
@@ -95,6 +104,7 @@ class AtvRemoteClient(
 
             while (!started) {
                 val message = readMessage()
+                updateImeState(message)
 
                 if (message.any { it.number == 40 }) {
                     started = true
@@ -118,16 +128,55 @@ class AtvRemoteClient(
     }
 
     fun pressPower() {
+        sendKey(KEYCODE_POWER)
+    }
+
+    fun pressKey(keyCode: Int) {
         check(connected) { "Remote is not connected" }
         check(features and FEATURE_KEY != 0) {
-            "KEY feature is unavailable"
+            "TV does not support key commands"
         }
 
         val keyMessage =
-            ProtoCodec.encodeVarintField(1, KEYCODE_POWER.toLong()) +
-            ProtoCodec.encodeVarintField(2, 3)
+            ProtoCodec.encodeVarintField(1, keyCode.toLong()) +
+            ProtoCodec.encodeVarintField(2, DIRECTION_SHORT.toLong())
 
         sendMessage(10, keyMessage)
+    }
+
+    fun sendText(text: String) {
+        check(connected) { "Remote is not connected" }
+        check(features and FEATURE_IME != 0) {
+            "This TV does not support remote keyboard input"
+        }
+        require(text.isNotEmpty()) { "Type some text first" }
+
+        // Android TV Remote v2 uses the current IME and field counters
+        // reported by the TV, then inserts text at the current cursor.
+        val cursor = text.codePointCount(0, text.length) - 1
+        val imeObject =
+            ProtoCodec.encodeVarintField(1, cursor.toLong()) +
+            ProtoCodec.encodeVarintField(2, cursor.toLong()) +
+            ProtoCodec.encodeStringField(3, text)
+
+        val editInfo =
+            ProtoCodec.encodeVarintField(1, 1) +
+            ProtoCodec.encodeBytesField(2, imeObject)
+
+        val batchEdit =
+            ProtoCodec.encodeVarintField(1, imeCounter.toLong()) +
+            ProtoCodec.encodeVarintField(2, imeFieldCounter.toLong()) +
+            ProtoCodec.encodeBytesField(3, editInfo)
+
+        sendMessage(21, batchEdit)
+    }
+
+    private fun updateImeState(message: List<ProtoCodec.Field>) {
+        val batchEdit = message.firstOrNull { it.number == 21 } ?: return
+        val fields = ProtoCodec.parse(batchEdit.bytes)
+
+        imeCounter = fields.firstOrNull { it.number == 1 }?.varint?.toInt() ?: imeCounter
+        imeFieldCounter = fields.firstOrNull { it.number == 2 }?.varint?.toInt() ?: imeFieldCounter
     }
 
     private fun answerPing(message: List<ProtoCodec.Field>) {
@@ -154,6 +203,7 @@ class AtvRemoteClient(
         try {
             while (connected) {
                 val message = readMessage()
+                updateImeState(message)
                 answerPing(message)
                 checkNoRemoteError(message)
             }
