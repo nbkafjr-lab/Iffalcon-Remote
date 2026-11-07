@@ -9,12 +9,14 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.ButtonDefaults
@@ -372,7 +374,17 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("▣", color = Color(0xFFEAF2FF), fontSize = 28.sp)
+                                Surface(
+                                    color = Color(0xFF263653),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(
+                                        "TV",
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp),
+                                        color = Color(0xFFEAF2FF),
+                                        fontSize = 15.sp
+                                    )
+                                }
                                 Spacer(Modifier.width(12.dp))
                                 Text(
                                     "iFFALCON Remote",
@@ -421,7 +433,34 @@ class MainActivity : ComponentActivity() {
                                 .width(230.dp)
                                 .height(66.dp)
                         ) {
-                            Text("⏻   POWER", fontSize = 21.sp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Canvas(Modifier.size(30.dp)) {
+                                    val ring = Stroke(
+                                        width = size.minDimension * 0.10f,
+                                        cap = StrokeCap.Round
+                                    )
+                                    drawArc(
+                                        color = Color(0xFF20B7FF),
+                                        startAngle = 135f,
+                                        sweepAngle = 270f,
+                                        useCenter = false,
+                                        topLeft = Offset(size.width * 0.16f, size.height * 0.16f),
+                                        size = Size(size.width * 0.68f, size.height * 0.68f),
+                                        style = ring
+                                    )
+                                    drawLine(
+                                        color = Color(0xFF20B7FF),
+                                        start = Offset(size.width / 2f, size.height * 0.06f),
+                                        end = Offset(size.width / 2f, size.height * 0.49f),
+                                        strokeWidth = size.minDimension * 0.10f,
+                                        cap = StrokeCap.Round
+                                    )
+                                }
+                                Text("POWER", fontSize = 21.sp)
+                            }
                         }
 
                         Spacer(Modifier.height(18.dp))
@@ -660,7 +699,7 @@ class MainActivity : ComponentActivity() {
                                 BottomAction(Modifier.weight(1f), "◉", "Wi-Fi") {
                                     startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
                                 }
-                                BottomAction(Modifier.weight(1f), "ᛒ", "Bluetooth") {
+                                BottomAction(Modifier.weight(1f), "B", "Bluetooth") {
                                     startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
                                 }
                                 BottomAction(Modifier.weight(1f), "▧", "Wallpaper") {
