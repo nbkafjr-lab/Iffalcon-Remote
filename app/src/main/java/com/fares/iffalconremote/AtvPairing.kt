@@ -125,7 +125,7 @@ object AtvPairing {
 
     fun begin(
         context: Context,
-        host: String = "192.168.1.2",
+        host: String,
         port: Int = 6467
     ): AtvPairingSession {
 
