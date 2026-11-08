@@ -464,6 +464,49 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                        Spacer(Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { runRemoteAction("VOLUME DOWN") { it.pressKey(25) } },
+                                enabled = !busy,
+                                shape = RoundedCornerShape(40.dp),
+                                border = BorderStroke(1.dp, Color(0xFF405681)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Color(0xFF172238),
+                                    contentColor = Color(0xFFEAF2FF)
+                                ),
+                                modifier = Modifier.weight(1f).height(52.dp)
+                            ) { Text("−  VOL", fontSize = 15.sp) }
+
+                            Button(
+                                onClick = { runRemoteAction("MUTE") { it.pressKey(164) } },
+                                enabled = !busy,
+                                shape = RoundedCornerShape(40.dp),
+                                border = BorderStroke(1.dp, Color(0xFF405681)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Color(0xFF172238),
+                                    contentColor = Color(0xFFEAF2FF)
+                                ),
+                                modifier = Modifier.weight(1f).height(52.dp)
+                            ) { Text("MUTE", fontSize = 14.sp) }
+
+                            Button(
+                                onClick = { runRemoteAction("VOLUME UP") { it.pressKey(24) } },
+                                enabled = !busy,
+                                shape = RoundedCornerShape(40.dp),
+                                border = BorderStroke(1.dp, Color(0xFF405681)),
+                                colors = ButtonDefaults.buttonColors(
+                                    backgroundColor = Color(0xFF172238),
+                                    contentColor = Color(0xFFEAF2FF)
+                                ),
+                                modifier = Modifier.weight(1f).height(52.dp)
+                            ) { Text("+  VOL", fontSize = 15.sp) }
+                        }
+
                         Spacer(Modifier.height(18.dp))
 
                         Row(
